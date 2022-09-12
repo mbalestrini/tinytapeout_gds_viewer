@@ -56,6 +56,9 @@
         import { TextGeometry } from 'textgeometry';
         import { GUI } from 'datgui';
 
+
+        var GLTF_URL = 'tinytapeout.gds.gltf';
+
         const scene = new THREE.Scene();
 
         var raycaster = new THREE.Raycaster();
@@ -147,7 +150,7 @@
 
         const gltf_loader = new GLTFLoader();
         gltf_loader.load(
-            'tinytapeout.gds.gltf',
+            GLTF_URL,
             // called when the resource is loaded
             function (gltf) {
 
