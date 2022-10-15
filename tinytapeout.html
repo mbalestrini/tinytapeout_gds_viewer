@@ -427,19 +427,21 @@
 
                     controls.saveState();
 
-                    var objWorldPos = new THREE.Vector3;
-                    highlightedObjects[0].parent.getWorldPosition(objWorldPos);
-                    // console.log(objWorldPos);
+                    var viewCenter =  new THREE.Vector3;
+                    const bbox = new THREE.BoxHelper( highlightedObjects[0].parent, 0xffff00 );
+                    bbox.geometry.computeBoundingBox();
+                    bbox.geometry.boundingBox.getCenter(viewCenter);
+                    //scene.add(box);
                     turnOffHighlight();
 
-                    camera.position.x = objWorldPos.x;
+                    camera.position.x = viewCenter.x;
                     camera.position.y = 20;;
-                    camera.position.z = objWorldPos.z; //200;
+                    camera.position.z = viewCenter.z;
 
                     camera.up.x = 0;
                     camera.up.y = 0;
                     camera.up.z = -1;
-                    controls.target.set(objWorldPos.x, 0, objWorldPos.z);
+                    controls.target.set(viewCenter.x, 0, viewCenter.z);
                     controls.update();
 
                 } else {
