@@ -121,11 +121,11 @@
 
 
 
-        const loader = new FontLoader();
-        var mainFont = null;
-        loader.load('fonts/helvetiker_regular.typeface.json', function (font) {
-            mainFont = font;
-        });
+        // const loader = new FontLoader();
+        // var mainFont = null;
+        // loader.load('fonts/helvetiker_regular.typeface.json', function (font) {
+        //     mainFont = font;
+        // });
 
         const gui = new GUI();
         const guiViewSettings = gui.addFolder("View Settings");
@@ -171,6 +171,10 @@
                             if (node instanceof THREE.Object3D) {
                                 // console.log(node.userData["type"]);
                                 const cell_type = node.userData["type"];
+
+                                if(cell_type==undefined) {
+                                    continue;
+                                }
                                 if (cell_stats[cell_type] == undefined) {
                                     cell_stats[cell_type] = 0;
                                 }
@@ -181,12 +185,35 @@
 
                     }
 
-                    console.log(viewSettings.materials);
-                    console.log(viewSettings.materials_visibility);
+                    // console.log(viewSettings.materials);
+                    // console.log(viewSettings.materials_visibility);
                 }
 
+                // showCell = function(c) {
+
+                // };
+
+                var cell_stats_actions = {};
+
                 for (var cell_name in cell_stats) {
-                    guiStatsFolder.add(cell_stats, cell_name);
+                    // guiStatsFolder.add(cell_stats, cell_name);
+                    // console.log(cell_name);
+                    let c = cell_name;
+                    // cell_stats_actions[c] = function() {
+                    //     console.log(c);
+                    // };
+
+                    // let folder = guiStatsFolder.addFolder(cell_name);
+                    // folder.add(cell_stats_actions, c);
+                    let controller = guiStatsFolder.add(cell_stats, cell_name);
+                    controller.domElement.onmouseover = function (event) {
+                        event.stopPropagation();
+                        actionHighlightCellType(c);
+                    }
+                    controller.domElement.onmouseout = function (event) {
+                        turnOffHighlight();
+                    }
+
                 }
 
 
@@ -237,9 +264,11 @@
         var highlightedObjects = null;
 
         var cellDetailMode = false;
-        
-        window.onmousemove = function (event) {
-            if (event.buttons != 0 || cellDetailMode)
+
+        window.onmousedown = function (event) {
+            // if (event.buttons != 0 || cellDetailMode)
+                // return;
+            if (cellDetailMode)
                 return;
 
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -249,7 +278,7 @@
             var intersects = raycaster.intersectObject(scene, true);
 
             turnOffHighlight();
-                
+
 
             if (intersects.length > 0) {
                 for (var i = 0; i < intersects.length; i++) {
@@ -257,16 +286,29 @@
                     if (object.parent.parent.name != "" && object.parent.visible) {
                         informationDiv.innerHTML = ("Mouse over: " + object.parent.name + " (" + object.parent.userData["type"] + ")");
 
+                        
                         if (highlightedObjects == null) {
                             highlightedObjects = [];
                             previousMaterials = [];
                         }
-                        if (highlightedObjects.indexOf(object) == -1) {
-                            previousMaterials.push(object.material);
-                            highlightedObjects.push(object);
-                            object.material = highlightMaterial;
+
+                        let node = object.parent;
+              
+                        for (var mesh_idx = 0; mesh_idx < node.children.length; mesh_idx++) {
+                            let obj = node.children[mesh_idx];
+                            if(obj instanceof THREE.Mesh) {
+                                
+                                if (highlightedObjects.indexOf(obj) == -1) {
+                                    previousMaterials.push(obj.material);
+                                    highlightedObjects.push(obj);
+                                    obj.material = highlightMaterial;
+                                    
+                                    
+                                }
+                            }
                         }
 
+                        
 
                     }
                     // object.material.color.set(Math.random() * 0xffffff);
@@ -274,7 +316,7 @@
             }
         }
 
-        function turnOffHighlight() {            
+        function turnOffHighlight() {
             if (highlightedObjects != null) {
                 for (var i = 0; i < highlightedObjects.length; i++) {
                     // console.log(highlightedObjects[i]);
@@ -321,6 +363,42 @@
             }
         }
 
+        function actionHighlightCellType(cell_type) {
+            turnOffHighlight();
+            
+            if (highlightedObjects == null) {
+                highlightedObjects = [];
+                previousMaterials = [];
+            }
+
+            for (var i = 0; i < scene.children.length; i++) {
+                for (var j = 0; j < scene.children[i].children.length; j++) {
+                    for (var k = 0; k < scene.children[i].children[j].children.length; k++) {
+                        let node = scene.children[i].children[j].children[k];
+                        if (node.userData["type"] != undefined && node.userData["type"] == cell_type) {
+                            //node.visible = !node.visible;                            
+
+                            for (var mesh_idx = 0; mesh_idx < node.children.length; mesh_idx++) {
+                                let obj = node.children[mesh_idx];
+                                if(obj instanceof THREE.Mesh) {
+                                    
+                                    if (highlightedObjects.indexOf(obj) == -1) {
+                                        previousMaterials.push(obj.material);
+                                        highlightedObjects.push(obj);
+                                        obj.material = highlightMaterial;
+                                       
+                                        
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+        
+        }
+
 
         window.onkeypress = function (event) {
             // console.log(event.key);
@@ -345,10 +423,10 @@
                         }
                     }
 
-                    
-                    
+
+
                     controls.saveState();
-                    
+
                     var objWorldPos = new THREE.Vector3;
                     highlightedObjects[0].parent.getWorldPosition(objWorldPos);
                     // console.log(objWorldPos);
@@ -371,7 +449,7 @@
                         for (var j = 0; j < scene.children[i].children.length; j++) {
                             for (var k = 0; k < scene.children[i].children[j].children.length; k++) {
                                 var node = scene.children[i].children[j].children[k];
-                                if (node instanceof THREE.Object3D ) {
+                                if (node instanceof THREE.Object3D) {
                                     node.visible = true;
                                 }
                             }
