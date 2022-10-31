@@ -6,7 +6,8 @@ import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
 
 var informationDiv = document.querySelector("div#information");
 
-var GLTF_URL = 'tinytapeout.gds.gltf';
+const urlParams = new URLSearchParams(location.search);
+const GLTF_URL = urlParams.get('model') || 'tinytapeout.gds.gltf';
 
 const scene = new THREE.Scene();
 
