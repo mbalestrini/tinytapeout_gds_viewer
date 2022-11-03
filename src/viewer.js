@@ -6,8 +6,16 @@ import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
 
 var informationDiv = document.querySelector("div#information");
 
+// We can't load HTTP resources anyway, so let's just assume HTTPS
+function toHttps(url) {
+    if (typeof url != 'string') {
+        return url;
+    }
+    return url.replace(/^http:\/\//i, 'https://');
+}
+
 const urlParams = new URLSearchParams(location.search);
-const GLTF_URL = urlParams.get('model') || 'tinytapeout.gds.gltf';
+const GLTF_URL = toHttps(urlParams.get('model')) || 'tinytapeout.gds.gltf';
 
 const scene = new THREE.Scene();
 
