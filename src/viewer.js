@@ -100,110 +100,136 @@ let viewSettings = {
 guiViewSettings.add(viewSettings, 'toggleFillerCells');
 guiViewSettings.add(viewSettings, 'toggleTopCellGeometry');
 
+// We will put scene loaded from glTF file in a global Group container
+// so that we can clear the old glTF scene before the new scene is loaded
 const gltf_loader = new GLTFLoader();
-gltf_loader.load(
-  GLTF_URL,
-  // called when the resource is loaded
-  function (gltf) {
-    scene.add(gltf.scene);
+const gltf_group = new THREE.Group();
+scene.add(gltf_group);
+loadGLTFScene();
 
-    gltf.scene.rotation.x = -Math.PI / 2;
-    gltf.animations; // Array<THREE.AnimationClip>
-    gltf.scene; // THREE.Group
-    gltf.scenes; // Array<THREE.Group>
-    gltf.cameras; // Array<THREE.Camera>
-    gltf.asset; // Object
+// Install vite's Hot Module Replacement (HMR) hook that listens for changes to the GLTF file
+// NOTE: this only works in vite's development server mode
+if (import.meta.hot) {
+  import.meta.hot.accept();
+  import.meta.hot.dispose(() => {
+    clearGLTFScene();
+  });
+  import.meta.hot.on('my-gltf-change', () => {
+    console.log('GLTF file changed, reloading model...');
+    loadGLTFScene(); // Re-load the model
+  });
+}
 
-    let cell_stats = [];
-    for (var i = 0; i < scene.children.length; i++) {
-      for (var j = 0; j < scene.children[i].children.length; j++) {
-        for (var k = 0; k < scene.children[i].children[j].children.length; k++) {
-          var node = scene.children[i].children[j].children[k];
-          if (node instanceof THREE.Object3D) {
-            // console.log(node.userData["type"]);
-            const cell_type = node.userData['type'];
+function clearGLTFScene() {
+  gltf_group.clear();
+}
 
-            if (cell_type == undefined) {
-              continue;
+function loadGLTFScene(url) {
+  gltf_loader.load(
+    GLTF_URL,
+    function (gltf) {
+      // called when the resource is loaded
+      clearGLTFScene();
+      gltf_group.add(gltf.scene);
+
+      gltf.scene.rotation.x = -Math.PI / 2;
+      gltf.animations; // Array<THREE.AnimationClip>
+      gltf.scene; // THREE.Group
+      gltf.scenes; // Array<THREE.Group>
+      gltf.cameras; // Array<THREE.Camera>
+      gltf.asset; // Object
+
+      let cell_stats = [];
+      for (var i = 0; i < scene.children.length; i++) {
+        for (var j = 0; j < scene.children[i].children.length; j++) {
+          for (var k = 0; k < scene.children[i].children[j].children.length; k++) {
+            var node = scene.children[i].children[j].children[k];
+            if (node instanceof THREE.Object3D) {
+              // console.log(node.userData["type"]);
+              const cell_type = node.userData['type'];
+
+              if (cell_type == undefined) {
+                continue;
+              }
+              if (cell_stats[cell_type] == undefined) {
+                cell_stats[cell_type] = 0;
+              }
+              cell_stats[cell_type]++;
             }
-            if (cell_stats[cell_type] == undefined) {
-              cell_stats[cell_type] = 0;
-            }
-            cell_stats[cell_type]++;
           }
         }
+
+        // console.log(viewSettings.materials);
+        // console.log(viewSettings.materials_visibility);
       }
 
-      // console.log(viewSettings.materials);
-      // console.log(viewSettings.materials_visibility);
-    }
+      // showCell = function(c) {
 
-    // showCell = function(c) {
-
-    // };
-
-    var cell_stats_actions = {};
-
-    for (var cell_name in cell_stats) {
-      // guiStatsFolder.add(cell_stats, cell_name);
-      // console.log(cell_name);
-      let c = cell_name;
-      // cell_stats_actions[c] = function() {
-      //     console.log(c);
       // };
 
-      // let folder = guiStatsFolder.addFolder(cell_name);
-      // folder.add(cell_stats_actions, c);
-      let controller = guiStatsFolder.add(cell_stats, cell_name);
-      controller.domElement.onmouseover = function (event) {
-        event.stopPropagation();
-        actionHighlightCellType(c);
-      };
-      controller.domElement.onmouseout = function (event) {
-        turnOffHighlight();
-      };
-    }
+      var cell_stats_actions = {};
 
-    scene.traverse(function (object) {
-      if (object.material) {
-        if (viewSettings.materials[object.material.name] == undefined) {
-          viewSettings.materials[object.material.name] = object.material;
-          viewSettings.materials_visibility[object.material.name] = true;
-          // console.log(object.material.name);
-          guiViewSettings
-            .add(viewSettings.materials_visibility, object.material.name)
-            .onChange(function (new_value) {
-              viewSettings.materials[this._name].visible = new_value; // viewSettings.materials_visibility[node.material.name];
-            });
-        }
+      for (var cell_name in cell_stats) {
+        // guiStatsFolder.add(cell_stats, cell_name);
+        // console.log(cell_name);
+        let c = cell_name;
+        // cell_stats_actions[c] = function() {
+        //     console.log(c);
+        // };
+
+        // let folder = guiStatsFolder.addFolder(cell_name);
+        // folder.add(cell_stats_actions, c);
+        let controller = guiStatsFolder.add(cell_stats, cell_name);
+        controller.domElement.onmouseover = function (event) {
+          event.stopPropagation();
+          actionHighlightCellType(c);
+        };
+        controller.domElement.onmouseout = function (event) {
+          turnOffHighlight();
+        };
       }
-    });
 
-    // TEXT TEST
-    // const geometry = new TextGeometry('TinyTapeout', {
-    //     font: mainFont,
-    //     size: 1.2,
-    //     height: 0.1,
-    //     curveSegments: 12,
-    //     bevelEnabled: false,
-    //     bevelThickness: 0.1,
-    //     bevelSize: 0.1,
-    //     bevelOffset: 0,
-    //     bevelSegments: 5
-    // });
-    // const textMesh = new THREE.Mesh(geometry);
-    // textMesh.rotation.x = -Math.PI / 2;
-    // scene.children[0].add(textMesh);
-  },
-  // called while loading is progressing
-  function (xhr) {
-    console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-  },
-  // called when loading has errors
-  function (error) {
-    console.log('An error happened');
-  },
-);
+      scene.traverse(function (object) {
+        if (object.material) {
+          if (viewSettings.materials[object.material.name] == undefined) {
+            viewSettings.materials[object.material.name] = object.material;
+            viewSettings.materials_visibility[object.material.name] = true;
+            // console.log(object.material.name);
+            guiViewSettings
+              .add(viewSettings.materials_visibility, object.material.name)
+              .onChange(function (new_value) {
+                viewSettings.materials[this._name].visible = new_value; // viewSettings.materials_visibility[node.material.name];
+              });
+          }
+        }
+      });
+
+      // TEXT TEST
+      // const geometry = new TextGeometry('TinyTapeout', {
+      //     font: mainFont,
+      //     size: 1.2,
+      //     height: 0.1,
+      //     curveSegments: 12,
+      //     bevelEnabled: false,
+      //     bevelThickness: 0.1,
+      //     bevelSize: 0.1,
+      //     bevelOffset: 0,
+      //     bevelSegments: 5
+      // });
+      // const textMesh = new THREE.Mesh(geometry);
+      // textMesh.rotation.x = -Math.PI / 2;
+      // scene.children[0].add(textMesh);
+    },
+    // called while loading is progressing
+    function (xhr) {
+      console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+    },
+    // called when loading has errors
+    function (error) {
+      console.log('An error happened');
+    },
+  );
+}
 
 const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0x50f050 });
 highlightMaterial.name = 'HIGHLIGHT';
