@@ -102,8 +102,8 @@ function init() {
   };
 
   viewSettings = {
-    'Filler cells': true,
-    'Top cell geometry': true,
+    filler_cells: true,
+    top_cell_geometry: true,
     materials: [],
     materials_visibility: [],
   };
@@ -238,13 +238,15 @@ function initGUI() {
 
   // View Settings
   guiViewSettings
-    .add(viewSettings, 'Filler cells')
+    .add(viewSettings, 'filler_cells')
+    .name('Filler cells')
     .listen()
     .onChange(function (new_value) {
       setFillerCellsVisibility(new_value);
     });
   guiViewSettings
-    .add(viewSettings, 'Top cell geometry')
+    .add(viewSettings, 'top_cell_geometry')
+    .name('Top cell geometry')
     .listen()
     .onChange(function (new_value) {
       setTopCellGeometryVisibility(new_value);
@@ -317,7 +319,7 @@ function updateGuiAfterLoad() {
     const material = parser.materials[i];
     viewSettings.materials[material.name] = material;
     viewSettings.materials_visibility[material.name] = true;
-    guiLayersFolder
+    let widget = guiLayersFolder
       .add(viewSettings.materials_visibility, material.name)
       .onChange(function (new_value) {
         if (new_value) {
@@ -330,6 +332,8 @@ function updateGuiAfterLoad() {
           raycaster.layers.disable(getLayerIDFromMaterial(viewSettings.materials[this._name]));
         }
       });
+    widget.domElement.style =
+      'border-left: 5px solid #' + material.color.getHexString(THREE.LinearSRGBColorSpace) + ';';
   }
 
   // List instances
@@ -401,7 +405,7 @@ function setSectionViewVisibility(sectionViewEnabled) {
 }
 
 function setFillerCellsVisibility(visible) {
-  viewSettings['Filler cells'] = visible;
+  viewSettings.filler_cells = visible;
   for (let i in parser.instancedMeshes) {
     const name = parser.instancedMeshes[i].name;
     if (
@@ -415,7 +419,7 @@ function setFillerCellsVisibility(visible) {
 }
 
 function setTopCellGeometryVisibility(visile) {
-  viewSettings['Top cell geometry'] = visile;
+  viewSettings.top_cell_geometry = visile;
 
   for (var i = 0; i < node_graph.children.length; i++) {
     const node = node_graph.children[i];
@@ -590,9 +594,9 @@ window.onresize = function () {
 
 window.onkeypress = function (event) {
   if (event.key == '1') {
-    setFillerCellsVisibility(!viewSettings['Filler cells']);
+    setFillerCellsVisibility(!viewSettings.filler_cells);
   } else if (event.key == '2') {
-    setTopCellGeometryVisibility(!viewSettings['Top cell geometry']);
+    setTopCellGeometryVisibility(!viewSettings.top_cell_geometry);
   } else if (event.key == '3') {
     if (selected_object) {
       if (selected_object != node_graph) {
@@ -817,8 +821,8 @@ function buildScene(main_node_idx) {
 
   node_graph.bounding_box = main_bounding_box;
 
-  viewSettings['Filler cells'] = true;
-  viewSettings['Top cell geometry'] = true;
+  viewSettings.filler_cells = true;
+  viewSettings.top_cell_geometry = true;
 }
 
 function parseNode(parser_data, node_idx, parent_matrix, node_graph) {
