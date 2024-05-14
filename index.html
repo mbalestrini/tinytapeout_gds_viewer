@@ -12,6 +12,18 @@
             font-size: 12px;
         }
 
+        .textShadow {
+            text-shadow:
+            -1px -1px 0 #202020,
+             0   -1px 0 #202020,
+             1px -1px 0 #202020,
+             1px  0   0 #202020,
+             1px  1px 0 #202020,
+             0    1px 0 #202020,
+            -1px  1px 0 #202020,
+            -1px  0   0 #202020;
+        }
+        
         #loadingStatus {
             position: absolute;
             top: 50%;
@@ -57,9 +69,9 @@
     <div id="loadingStatus">LOADING...</div>
 
     <div style="position: absolute; color:white; left: 5px; top: 5px;">
-        <div id="instanceClassTitle">DESIGN</div>
-        <div id="information"></div>
-        <div><br>KEYS
+        <div id="instanceClassTitle" class="textShadow">DESIGN</div>
+        <div id="information" class="textShadow"></div>
+        <div class="textShadow"><br>KEYS
             <br>1: Hide Fill, Decap, Tap cells
             <br>2: Hide top cell geometry
             <br>3: Isolate selection / back
