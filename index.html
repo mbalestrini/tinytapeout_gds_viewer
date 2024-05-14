@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>TinyTapeout GDS Viewer test</title>
+    <title>TinyTapeout GDS Viewer</title>
     <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
     <style>
         body {
@@ -11,18 +11,60 @@
             font-family: 'Roboto', sans-serif;
             font-size: 12px;
         }
+
+        #loadingStatus {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            font-size: medium;
+            color: white;
+            font-weight: bold;
+        }
+
+        #crossSection {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            margin-left: 10px;
+            margin-bottom: 10px;
+        }
+
+        #instanceClassTitle {
+            font-size: large;
+        }
+
+        #information {
+            font-size: small;
+        }
+
+        .lil-gui { 
+            /* --folder-ident: 4; */
+            --background-color: #181818;
+            /* --widget-color: rgb(0, 89, 134); */
+            /* --padding: 2px; */
+        }
+
+        .selection_link a {
+            color: white;
+            cursor: pointer;
+        }
     </style>
 </head>
 
 <body>
 
+    <div id="crossSection"></div>
+    <div id="loadingStatus">LOADING...</div>
+
     <div style="position: absolute; color:white; left: 5px; top: 5px;">
-        <div>KEYS
+        <div id="instanceClassTitle">DESIGN</div>
+        <div id="information"></div>
+        <div><br>KEYS
             <br>1: Hide Fill, Decap, Tap cells
             <br>2: Hide top cell geometry
-            <br>3: Isolate mouse over cell
+            <br>3: Isolate selection / back
         </div>
-        <div id="information">INFO</div>
+        
     </div>
 
     <script type="module" src="src/viewer.js"></script>

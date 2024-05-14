@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/TinyTapeout/tinytapeout_gds_viewer#readme",
   "dependencies": {
-    "three": "^0.146.0"
+    "three": "^0.161.0"
   },
   "devDependencies": {
     "husky": "^9.0.7",
