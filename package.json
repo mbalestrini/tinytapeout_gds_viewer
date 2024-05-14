@@ -1,0 +1,40 @@
+{
+  "name": "tinytapeout_gds_viewer",
+  "version": "1.0.0",
+  "description": "Tiny Tapeout GDS Viewer",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "prepare": "husky",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TinyTapeout/tinytapeout_gds_viewer.git"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/TinyTapeout/tinytapeout_gds_viewer/issues"
+  },
+  "homepage": "https://github.com/TinyTapeout/tinytapeout_gds_viewer#readme",
+  "dependencies": {
+    "three": "^0.146.0"
+  },
+  "devDependencies": {
+    "husky": "^9.0.7",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.4",
+    "vite": "^3.2.2"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{js,css}": [
+      "prettier --write"
+    ]
+  }
+}
