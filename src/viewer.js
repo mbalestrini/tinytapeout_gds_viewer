@@ -60,7 +60,7 @@ let loadingStatus = document.querySelector('div#loadingStatus');
 let crossSectionDiv = document.querySelector('div#crossSection');
 
 // lil-gui controls
-let guiLayersFolder, guiStatsFolder;
+let guiLayersFolder, guiInstancesFolder, guiInstancesNamesFolder;
 
 let viewSettings, performanceSettings, experimentalSettings;
 
@@ -106,6 +106,7 @@ function init() {
     top_cell_geometry: true,
     materials: [],
     materials_visibility: [],
+    instances: [],
   };
 
   init3D();
@@ -227,8 +228,8 @@ function initGUI() {
   guiLayersFolder = gui.addFolder('Layers');
   guiLayersFolder.open();
 
-  guiStatsFolder = gui.addFolder('Stats');
-  guiStatsFolder.close();
+  guiInstancesFolder = gui.addFolder('Cells/Instances');
+  guiInstancesFolder.close();
 
   let guiPerformanceSettings = gui.addFolder('Performance');
   guiPerformanceSettings.close();
@@ -250,6 +251,27 @@ function initGUI() {
     .listen()
     .onChange(function (new_value) {
       setTopCellGeometryVisibility(new_value);
+    });
+
+  // List instances
+  viewSettings.instances['_ ALL _'] = true;
+  viewSettings.instances['_ SORT_BY _'] = 'Name';
+  viewSettings.instances['list'] = [];
+  guiInstancesFolder
+    .add(viewSettings.instances, '_ ALL _')
+    .name('ALL')
+    .onChange(function (new_value) {
+      for (let instance_name in parser.stats.instances) {
+        viewSettings.instances.list[instance_name] = new_value;
+        setInstanceVisibility(instance_name, new_value);
+      }
+    });
+  guiInstancesFolder
+    .add(viewSettings.instances, '_ SORT_BY _')
+    .options(['Name', 'Count'])
+    .name('Sort By')
+    .onChange(function (new_value) {
+      buildInstancesNamesFolder(new_value);
     });
 
   // Performance Settings
@@ -302,7 +324,6 @@ function updateGuiAfterLoad() {
   viewSettings.materials_visibility['ALL'] = true;
 
   // Layers visibility
-
   guiLayersFolder.add(viewSettings.materials_visibility, 'ALL').onChange(function (new_value) {
     for (let i = 0; i < parser.materials.length; i++) {
       const material = parser.materials[i];
@@ -314,7 +335,6 @@ function updateGuiAfterLoad() {
       material_visibility_prop.setValue(new_value);
     }
   });
-
   for (let i = 0; i < parser.materials.length; i++) {
     const material = parser.materials[i];
     viewSettings.materials[material.name] = material;
@@ -336,9 +356,41 @@ function updateGuiAfterLoad() {
       'border-left: 5px solid #' + material.color.getHexString(THREE.LinearSRGBColorSpace) + ';';
   }
 
-  // List instances
-  for (let instance_name in parser.stats.instances) {
-    guiStatsFolder.add(parser.stats.instances, instance_name);
+  // buildInstancesNamesFolder(viewSettings.instances['_ SORT_BY _']);
+}
+
+function buildInstancesNamesFolder(sorted_by, rebuild = false) {
+  if (guiInstancesNamesFolder) {
+    guiInstancesNamesFolder.destroy();
+  }
+
+  let sorted_instances_names = Object.keys(parser.stats.instances);
+
+  guiInstancesNamesFolder = guiInstancesFolder.addFolder(
+    'Cell types: ' +
+      sorted_instances_names.length +
+      ' - Instances: ' +
+      parser.stats.total_instances,
+  );
+
+  if (sorted_by == 'Name') {
+    sorted_instances_names.sort();
+  } else {
+    sorted_instances_names.sort(function (a, b) {
+      return parser.stats.instances[b] - parser.stats.instances[a];
+    });
+  }
+
+  for (let i in sorted_instances_names) {
+    const instance_name = sorted_instances_names[i];
+    if (rebuild) viewSettings.instances.list[instance_name] = true;
+    guiInstancesNamesFolder
+      .add(viewSettings.instances.list, instance_name)
+      .name(instance_name + ' (x' + parser.stats.instances[instance_name] + ')')
+      .listen()
+      .onChange(function (new_value) {
+        setInstanceVisibility(instance_name, new_value);
+      });
   }
 }
 
@@ -398,6 +450,15 @@ function animate() {
   if (show_fps_stats) fps_stats.update();
 }
 
+function setInstanceVisibility(instance_name, visible) {
+  for (let i in parser.instancedMeshes) {
+    const name = parser.instancedMeshes[i].name;
+    if (name.indexOf(instance_name) == 0) {
+      parser.instancedMeshes[i].visible = visible;
+    }
+  }
+}
+
 function setSectionViewVisibility(sectionViewEnabled) {
   experimental_show_section_on = sectionViewEnabled;
   section_renderer.domElement.parentElement.hidden = !sectionViewEnabled;
@@ -405,6 +466,8 @@ function setSectionViewVisibility(sectionViewEnabled) {
 }
 
 function setFillerCellsVisibility(visible) {
+  const instances_changed = [];
+
   viewSettings.filler_cells = visible;
   for (let i in parser.instancedMeshes) {
     const name = parser.instancedMeshes[i].name;
@@ -413,8 +476,17 @@ function setFillerCellsVisibility(visible) {
       name.indexOf('__decap') != -1 ||
       name.indexOf('__tap') != -1
     ) {
-      parser.instancedMeshes[i].visible = visible; //!parser.instancedMeshes[i].visible;
+      parser.instancedMeshes[i].visible = visible;
+      const instance_name = name.substr(
+        0,
+        name.length - parser.instancedMeshes[i].material.name.length - 1,
+      );
+      instances_changed[instance_name] = visible;
     }
+  }
+
+  for (let instance_name in instances_changed) {
+    viewSettings.instances.list[instance_name] = instances_changed[instance_name];
   }
 }
 
@@ -730,6 +802,7 @@ function cleanScene() {
   parser.stats = {};
   parser.stats.instances = {};
   parser.stats.total_nodes = parser.gltf.nodes.length;
+  parser.stats.total_instances = 0;
 
   scene_root_group = undefined;
 
@@ -823,6 +896,7 @@ function buildScene(main_node_idx) {
 
   viewSettings.filler_cells = true;
   viewSettings.top_cell_geometry = true;
+  buildInstancesNamesFolder(viewSettings.instances['_ SORT_BY _'], true);
 }
 
 function parseNode(parser_data, node_idx, parent_matrix, node_graph) {
@@ -841,6 +915,7 @@ function parseNode(parser_data, node_idx, parent_matrix, node_graph) {
     } else {
       parser_data.stats.instances[gltf_node.extras.type]++;
     }
+    parser.stats.total_instances++;
   }
 
   for (let i = 0; i < gltf_node.children.length; i++) {
