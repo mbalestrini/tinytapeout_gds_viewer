@@ -1,3 +1,12 @@
+/*
+
+Custom parser based on three.js GLTFLoader to be able to generate THREE.InstancedMesh objects for instances that came from the GDS, specially standard cells that repeat a lot.
+This way we reduce the number of opengl draw calls without the need to flatten the GDS and allowing us to highlight cells or isolate them. 
+The code is just an adaptation of this: https://github.com/mrdoob/three.js/blob/a2e9ee8204b67f9dca79f48cf620a34a05aa8126/examples/jsm/loaders/GLTFLoader.js, 
+made specifically to parse the GLTF files that are generated on the Tiny Tapeout template github actions
+
+*/
+
 import * as THREE from 'three';
 
 const WEBGL_TYPE_SIZES = {
