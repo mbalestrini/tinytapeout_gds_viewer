@@ -33,6 +33,7 @@ let section_renderer,
 let node_graph;
 
 let selected_object;
+let selection_helper;
 let isolation_history = [];
 let highlighted_objects = [];
 let highlighted_prev_colors = [];
@@ -60,7 +61,11 @@ let loadingStatus = document.querySelector('div#loadingStatus');
 let crossSectionDiv = document.querySelector('div#crossSection');
 
 // lil-gui controls
-let guiLayersFolder, guiInstancesFolder, guiInstancesNamesFolder;
+let guiLayersFolder,
+  guiInstancesFolder,
+  guiInstancesNamesFolder,
+  guiIsolateSelectionButton,
+  guiZoomSelectionButton;
 
 let viewSettings, performanceSettings, experimentalSettings;
 
@@ -238,6 +243,20 @@ function initGUI() {
   guiExperimentalSettings.open();
 
   // View Settings
+  viewSettings['isoleate_selection_or_back'] = function () {
+    isolateSelectionOrGoBack();
+  };
+  guiIsolateSelectionButton = guiViewSettings.add(viewSettings, 'isoleate_selection_or_back');
+  guiIsolateSelectionButton.name('Isolate selection / Back');
+  guiIsolateSelectionButton.disable();
+
+  viewSettings['zoom_selection'] = function () {
+    zoomSelection();
+  };
+  guiZoomSelectionButton = guiViewSettings.add(viewSettings, 'zoom_selection');
+  guiZoomSelectionButton.name('Zoom selection');
+  guiZoomSelectionButton.disable();
+
   guiViewSettings
     .add(viewSettings, 'filler_cells')
     .name('Filler cells')
@@ -539,8 +558,21 @@ function clearSelection() {
       buildScene(back_node.node_idx);
     };
     informationDiv.appendChild(item);
+
+    guiIsolateSelectionButton.enable();
+    guiIsolateSelectionButton.name('Back to ' + back_node.name);
+  } else {
+    guiIsolateSelectionButton.name('Isolate selection / Back');
+    guiIsolateSelectionButton.disable();
   }
+  guiZoomSelectionButton.name('Zoom selection');
+  guiZoomSelectionButton.disable();
+
   selected_object = undefined;
+  if (selection_helper) {
+    scene_root_group.remove(selection_helper);
+    // selection_helper = undefined;
+  }
 }
 
 function selectNode(graph_node) {
@@ -556,8 +588,8 @@ function selectNode(graph_node) {
   let padding = 0;
   for (let j = tree_list.length - 1; j >= 0; j--) {
     const item = document.createElement('div');
-    item.innerHTML =
-      "<a href='#'>" + tree_list[j].name + ' </a>( ' + tree_list[j].instance_class + ' )';
+    const class_text = tree_list[j].instance_class ? '( ' + tree_list[j].instance_class + ' )' : '';
+    item.innerHTML = "<a href='#'>" + tree_list[j].name + ' </a>' + class_text;
     item.className = 'selection_link';
     item.style.paddingLeft = padding + 'px';
     item.onmousedown = function () {
@@ -571,6 +603,56 @@ function selectNode(graph_node) {
 
   selected_object = graph_node;
   highlightObject(graph_node);
+
+  if (selection_helper == undefined) {
+    selection_helper = new THREE.Box3Helper(selected_object.bounding_box);
+  } else {
+    selection_helper.box = selected_object.bounding_box;
+  }
+
+  scene_root_group.add(selection_helper);
+
+  guiIsolateSelectionButton.enable();
+  guiIsolateSelectionButton.name('Isolate: ' + graph_node.name);
+
+  guiZoomSelectionButton.enable();
+  guiZoomSelectionButton.name('Zoom: ' + graph_node.name);
+}
+
+function isolateSelectionOrGoBack() {
+  if (selected_object) {
+    if (selected_object != node_graph) {
+      isolation_history.push(node_graph);
+      buildScene(selected_object.node_idx);
+    }
+  } else {
+    if (isolation_history.length > 0) {
+      buildScene(isolation_history.pop().node_idx);
+    }
+  }
+}
+
+function zoomSelection() {
+  if (selected_object) {
+    const bbox = selected_object.bounding_box;
+    let center = new THREE.Vector3();
+
+    bbox.getCenter(center);
+
+    setCameraPositionForFitInView(bbox);
+    camera.up.x = 0;
+    camera.up.y = 0;
+    camera.up.z = -1;
+    camera.lookAt(center.x, 0, center.z);
+
+    camera.updateProjectionMatrix();
+
+    // cameraControls.target.set(center);
+    if (cameraControls) cameraControls.dispose();
+    cameraControls = new OrbitControls.OrbitControls(camera, renderer.domElement);
+    cameraControls.target.set(center.x, 0, center.z);
+    cameraControls.update();
+  }
 }
 
 function highlightObject(graph_node) {
@@ -670,15 +752,9 @@ window.onkeypress = function (event) {
   } else if (event.key == '2') {
     setTopCellGeometryVisibility(!viewSettings.top_cell_geometry);
   } else if (event.key == '3') {
-    if (selected_object) {
-      if (selected_object != node_graph) {
-        isolation_history.push(node_graph);
-        buildScene(selected_object.node_idx);
-      }
-    } else {
-      if (isolation_history.length > 0) buildScene(isolation_history.pop().node_idx);
-      // buildScene(parser.gltf.scenes[parser.gltf.scene].nodes[0]);
-    }
+    isolateSelectionOrGoBack();
+  } else if (event.key == '4') {
+    zoomSelection();
   }
 };
 
@@ -890,13 +966,30 @@ function buildScene(main_node_idx) {
   if (node_graph.instance_class) {
     instanceClassTitleDiv.innerHTML += ' (' + node_graph.instance_class + ')';
   }
-  // instanceClassTitleDiv.innerHTML = node_graph.instance_class == "" ? node_graph.name : node_graph.instance_class;
 
   node_graph.bounding_box = main_bounding_box;
 
   viewSettings.filler_cells = true;
   viewSettings.top_cell_geometry = true;
   buildInstancesNamesFolder(viewSettings.instances['_ SORT_BY _'], true);
+
+  //// Test for checking nodes bounding boxes
+  //// Those bounding boxes could then be used to filter objects for raycasting
+  // let bbox_root_group = new THREE.Group();
+  // let nodes_to_add = [node_graph];
+  // while(nodes_to_add.length>0) {
+  //   const node = nodes_to_add.pop();
+
+  //   for (let i = 0; node.children && i < node.children.length; i++) {
+  //     nodes_to_add.push(node.children[i]);
+  //   }
+
+  //   if(node.bounding_box) {
+  //     const box = new THREE.Box3Helper(node.bounding_box);
+  //     bbox_root_group.add(box);
+  //   }
+  // }
+  // scene.add(bbox_root_group);
 }
 
 function parseNode(parser_data, node_idx, parent_matrix, node_graph) {
@@ -906,6 +999,7 @@ function parseNode(parser_data, node_idx, parent_matrix, node_graph) {
   node_graph.name = gltf_node.name;
   node_graph.instance_class = '';
   node_graph.children = [];
+  node_graph.bounding_box = undefined;
 
   if (gltf_node.extras != undefined && gltf_node.extras.type != undefined) {
     node_graph.instance_class = gltf_node.extras.type;
@@ -927,6 +1021,7 @@ function parseNode(parser_data, node_idx, parent_matrix, node_graph) {
     node_graph.children[i].parent = node_graph;
 
     const matrix = new THREE.Matrix4();
+    let mesh_bounding_box;
 
     if (gltf_node.matrix !== undefined) {
       // ToDo: this code wasn't tested as the GDS generated GLTF files don't have matrix transforms
@@ -960,6 +1055,7 @@ function parseNode(parser_data, node_idx, parent_matrix, node_graph) {
     matrix.premultiply(parent_matrix);
 
     if (gltf_child_node.mesh != undefined) {
+      // First time loading this mesh?
       if (parser_data.meshes[gltf_child_node.mesh] == undefined) {
         parseMesh(parser_data, gltf_child_node.mesh, gltf_child_node.name);
       }
@@ -971,8 +1067,7 @@ function parseNode(parser_data, node_idx, parent_matrix, node_graph) {
         };
       }
 
-      // ToDo: this code wasn't tested as the GDS generated GLTF files don't have mesh nodes with transformation data
-
+      // ToDo: this code wasn't tested as the GLTF generated from the GDS files don't have mesh nodes with transformation data
       if (gltf_child_node.matrix !== undefined) {
         // const matrix = new THREE.Matrix4();
         // matrix.fromArray(gltf_child_node.matrix);
@@ -1003,10 +1098,25 @@ function parseNode(parser_data, node_idx, parent_matrix, node_graph) {
       node_graph.children[i].mesh = gltf_child_node.mesh;
       node_graph.children[i].instanced_mesh_instance =
         parser_data.mesh_instances[gltf_child_node.mesh].instances.length - 1;
+
+      mesh_bounding_box = parser_data.meshes[gltf_child_node.mesh].geometry.boundingBox.clone();
+      mesh_bounding_box.applyMatrix4(matrix);
+
+      if (node_graph.bounding_box == undefined) {
+        node_graph.bounding_box = mesh_bounding_box.clone();
+      } else {
+        node_graph.bounding_box.union(mesh_bounding_box);
+      }
     }
 
     if (gltf_child_node.children != undefined && gltf_child_node.children.length > 0) {
       parseNode(parser_data, gltf_child_node_idx, matrix, node_graph.children[i]);
+
+      if (node_graph.bounding_box == undefined) {
+        node_graph.bounding_box = node_graph.children[i].bounding_box.clone();
+      } else {
+        node_graph.bounding_box.union(node_graph.children[i].bounding_box);
+      }
     }
   }
 }
