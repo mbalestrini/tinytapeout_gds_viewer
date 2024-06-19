@@ -84,6 +84,7 @@ if (import.meta.hot) {
   });
   import.meta.hot.on('my-gltf-change', () => {
     console.log('GLTF file changed, reloading model...');
+    clearSelection();
     let reset_camera = false;
     loadGLTFScene(GLTF_URL, reset_camera); // Re-load the model without reseting the camera
   });
