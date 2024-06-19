@@ -84,7 +84,8 @@ if (import.meta.hot) {
   });
   import.meta.hot.on('my-gltf-change', () => {
     console.log('GLTF file changed, reloading model...');
-    loadGLTFScene(GLTF_URL); // Re-load the model
+    let reset_camera = false;
+    loadGLTFScene(GLTF_URL, reset_camera); // Re-load the model without reseting the camera
   });
 }
 
@@ -123,7 +124,7 @@ function init() {
   loadGLTFScene(GLTF_URL);
 }
 
-function loadGLTFScene(url) {
+function loadGLTFScene(url, reset_camera = true) {
   fetch(url)
     .then((response) => response.json())
     .then((json) => {
@@ -139,7 +140,7 @@ function loadGLTFScene(url) {
           raycaster.layers.enable(getLayerIDFromMaterialIdx(i));
         }
 
-        buildScene(parser.gltf_root_node_idx);
+        buildScene(parser.gltf_root_node_idx, reset_camera);
 
         updateGuiAfterLoad();
       });
@@ -896,7 +897,7 @@ function cleanScene() {
   };
 }
 
-function buildScene(main_node_idx) {
+function buildScene(main_node_idx, reset_camera = true) {
   cleanScene();
 
   const main_node = parser.gltf.nodes[main_node_idx];
@@ -946,19 +947,21 @@ function buildScene(main_node_idx) {
   let center = new THREE.Vector3();
   main_bounding_box.getCenter(center);
 
-  setCameraPositionForFitInView(main_bounding_box);
-  camera.up.x = 0;
-  camera.up.y = 0;
-  camera.up.z = -1;
-  camera.lookAt(center.x, 0, center.z);
+  if (reset_camera) {
+    setCameraPositionForFitInView(main_bounding_box);
+    camera.up.x = 0;
+    camera.up.y = 0;
+    camera.up.z = -1;
+    camera.lookAt(center.x, 0, center.z);
 
-  camera.updateProjectionMatrix();
+    camera.updateProjectionMatrix();
 
-  // cameraControls.target.set(center);
-  if (cameraControls) cameraControls.dispose();
-  cameraControls = new OrbitControls.OrbitControls(camera, renderer.domElement);
-  cameraControls.target.set(center.x, 0, center.z);
-  cameraControls.update();
+    // cameraControls.target.set(center);
+    if (cameraControls) cameraControls.dispose();
+    cameraControls = new OrbitControls.OrbitControls(camera, renderer.domElement);
+    cameraControls.target.set(center.x, 0, center.z);
+    cameraControls.update();
+  }
 
   scene.add(scene_root_group);
 
