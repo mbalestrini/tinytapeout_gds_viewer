@@ -486,17 +486,25 @@ function setSectionViewVisibility(sectionViewEnabled) {
   section_renderer_box_helper.visible = sectionViewEnabled;
 }
 
+function isFillerCell(name) {
+  // IHP sg13g2:
+  if (name.startsWith('sg13g2_') && (name.indexOf('_fill_') >= 0 || name.indexOf('_decap_') >= 0)) {
+    return true;
+  }
+
+  // Skywater 130:
+  return (
+    name.indexOf('__fill') != -1 || name.indexOf('__decap') != -1 || name.indexOf('__tap') != -1
+  );
+}
+
 function setFillerCellsVisibility(visible) {
   const instances_changed = [];
 
   viewSettings.filler_cells = visible;
   for (let i in parser.instancedMeshes) {
     const name = parser.instancedMeshes[i].name;
-    if (
-      name.indexOf('__fill') != -1 ||
-      name.indexOf('__decap') != -1 ||
-      name.indexOf('__tap') != -1
-    ) {
+    if (isFillerCell(name)) {
       parser.instancedMeshes[i].visible = visible;
       const instance_name = name.substr(
         0,
