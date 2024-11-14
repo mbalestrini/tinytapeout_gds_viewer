@@ -9,6 +9,9 @@ function toHttps(url) {
   if (typeof url != 'string') {
     return url;
   }
+  if (['localhost', '127.0.0.1', '::1'].includes(new URL(url).hostname)) {
+    return url;
+  }
   return url.replace(/^http:\/\//i, 'https://');
 }
 
