@@ -5,17 +5,21 @@ export default defineConfig({
 
   plugins: [
     {
-      name: 'watch-gltf-files',
+      name: 'watch-gds-files',
       handleHotUpdate({ file, server }) {
-        // this allows hot-reloading of .gltf files
-        if (file.endsWith('.gltf')) {
+        // this allows hot-reloading of .gds files
+        if (file.endsWith('.gds')) {
           server.ws.send({
             type: 'custom',
-            event: 'my-gltf-change', // viewer.js listens for this event
+            event: 'my-gds-change', // viewer.js listens for this event
             data: {},
           });
         }
       },
     },
   ],
+
+  worker: {
+    format: 'es',
+  },
 });
