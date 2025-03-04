@@ -21,6 +21,10 @@ const urlParams = new URLSearchParams(location.search);
 const GDS_URL = toHttps(urlParams.get('model')) || 'tinytapeout.gds';
 const GDS_PROCESS = urlParams.get('process') || 'SKY130';
 
+if (GDS_URL.endsWith('.gltf')) {
+  location.href = `https://legacy-gltf.gds-viewer.tinytapeout.com/?model=${GDS_URL}`;
+}
+
 const gdsProcessorWorker = new Worker(new URL('./gds_processor_worker.js', import.meta.url), {
   type: 'module',
 });
