@@ -20,6 +20,7 @@ function toHttps(url) {
 const urlParams = new URLSearchParams(location.search);
 const GDS_URL = toHttps(urlParams.get('model')) || 'tinytapeout.gds';
 const GDS_PROCESS = urlParams.get('process') || 'SKY130';
+const OUTPUT_PROCESS_TO_CONSOLE = false;
 
 if (GDS_URL.endsWith('.gltf')) {
   location.href = `https://legacy-gltf.gds-viewer.tinytapeout.com/?model=${GDS_URL}`;
@@ -122,7 +123,8 @@ gdsProcessorWorker.addEventListener('message', function (event) {
     console.log('WORKER_READY');
     init();
   } else if (event.data.type == WORKER_MSG_TYPE.LOG) {
-    console.log(`Message from gds_processor_worker ${event.data.text}`);
+    if (OUTPUT_PROCESS_TO_CONSOLE)
+      console.log(`Message from gds_processor_worker ${event.data.text}`);
   } else if (event.data.type == WORKER_MSG_TYPE.ADD_CELL) {
     GDS.addCell(event.data.cell_name, event.data.bounds, event.data.is_top_cell);
   } else if (event.data.type == WORKER_MSG_TYPE.ADD_MESH) {
@@ -178,6 +180,7 @@ gdsProcessorWorker.addEventListener('message', function (event) {
     buildScene(null, true);
     // buildScene(GDS.top_cells[0], true);
     updateGuiAfterLoad();
+    initWindowEvents();
   }
 });
 
@@ -1110,108 +1113,112 @@ window.onresize = function () {
   renderer.setSize(window.innerWidth, window.innerHeight);
 };
 
-window.onkeyup = function (event) {
-  if (event.key == '1') {
-    setFillerCellsVisibility(!viewSettings.filler_cells);
-  } else if (event.key == '2') {
-    setTopCellGeometryVisibility(!viewSettings.top_cell_geometry);
-  } else if (event.key == '3') {
-    isolateSelectionOrGoBack();
-  } else if (event.key == '4') {
-    zoomSelection();
-  } else if (event.key == 'Escape') {
+function initWindowEvents() {
+  window.onkeyup = function (event) {
+    if (event.key == '1') {
+      setFillerCellsVisibility(!viewSettings.filler_cells);
+    } else if (event.key == '2') {
+      setTopCellGeometryVisibility(!viewSettings.top_cell_geometry);
+    } else if (event.key == '3') {
+      isolateSelectionOrGoBack();
+    } else if (event.key == '4') {
+      zoomSelection();
+    } else if (event.key == 'Escape') {
+      clearSelection();
+    } else if (event.key === 'ArrowUp') {
+      selectParent();
+    } else if (event.key === 'ArrowDown') {
+      selectFirstChild();
+    } else if (event.key === 'ArrowRight') {
+      selectNextSibling();
+    } else if (event.key === 'ArrowLeft') {
+      selectPrevSibling();
+    }
+  };
+
+  window.onmousemove = function (event) {
+    mouse_moved = true;
+
+    if (event.target != renderer.domElement) return;
+
+    let mouse = new THREE.Vector3();
+    let pos = new THREE.Vector3();
+
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    mouse.z = 0.5;
+
+    mouse.unproject(camera);
+    mouse.sub(camera.position).normalize();
+
+    let ray = new THREE.Ray(camera.position, mouse);
+    let plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2);
+    let point = new THREE.Vector3();
+    ray.intersectPlane(plane, point);
+
+    // section_camera.position.x = point.x;
+    section_camera.position.x = point.x;
+    section_camera.position.y = point.y;
+    section_camera.near = -1;
+    section_camera.far = 1;
+    section_camera.updateProjectionMatrix();
+
+    let camera_width = section_camera.right - section_camera.left;
+    let camera_height = section_camera.top - section_camera.bottom;
+    section_renderer_box.set(
+      new THREE.Vector3(
+        section_camera.position.x + section_camera.near,
+        section_camera.position.y - camera_width / 2,
+        section_camera.position.z - camera_height / 2,
+      ),
+      new THREE.Vector3(
+        section_camera.position.x + section_camera.far,
+        section_camera.position.y + camera_width / 2,
+        section_camera.position.z + camera_height / 2,
+      ),
+    );
+  };
+
+  window.onmousedown = function (event) {
+    if (event.target != renderer.domElement) return;
+    mouse_down_time = performance.now();
+    mouse_moved = false;
+  };
+
+  window.onmouseup = function (event) {
+    if (event.target != renderer.domElement) return;
+
+    const elapsed_time_ms = performance.now() - mouse_down_time;
+    if (event.button != 0 || (elapsed_time_ms > 100 && mouse_moved)) return;
+
     clearSelection();
-  } else if (event.key === 'ArrowUp') {
-    selectParent();
-  } else if (event.key === 'ArrowDown') {
-    selectFirstChild();
-  } else if (event.key === 'ArrowRight') {
-    selectNextSibling();
-  } else if (event.key === 'ArrowLeft') {
-    selectPrevSibling();
-  }
-};
 
-window.onmousemove = function (event) {
-  mouse_moved = true;
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
 
-  let mouse = new THREE.Vector3();
-  let pos = new THREE.Vector3();
+    const intersections = raycaster.intersectObject(scene, true);
 
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  mouse.z = 0.5;
+    // console.log("Raycast intersections:");
+    if (intersections.length > 0) {
+      for (var i = 0; i < intersections.length; i++) {
+        // console.log(intersections[i].object);
 
-  mouse.unproject(camera);
-  mouse.sub(camera.position).normalize();
+        if (intersections[i].object.isInstancedMesh && intersections[i].object.visible) {
+          let mesh = intersections[i].object;
+          let instanceId = intersections[i].instanceId;
 
-  let ray = new THREE.Ray(camera.position, mouse);
-  let plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2);
-  let point = new THREE.Vector3();
-  ray.intersectPlane(plane, point);
+          let clicked_node = GDS.meshes[mesh.name].instances[instanceId].node;
 
-  // section_camera.position.x = point.x;
-  section_camera.position.x = point.x;
-  section_camera.position.y = point.y;
-  section_camera.near = -1;
-  section_camera.far = 1;
-  section_camera.updateProjectionMatrix();
+          selectNode(clicked_node);
 
-  let camera_width = section_camera.right - section_camera.left;
-  let camera_height = section_camera.top - section_camera.bottom;
-  section_renderer_box.set(
-    new THREE.Vector3(
-      section_camera.position.x + section_camera.near,
-      section_camera.position.y - camera_width / 2,
-      section_camera.position.z - camera_height / 2,
-    ),
-    new THREE.Vector3(
-      section_camera.position.x + section_camera.far,
-      section_camera.position.y + camera_width / 2,
-      section_camera.position.z + camera_height / 2,
-    ),
-  );
-};
-
-window.onmousedown = function (event) {
-  if (event.target != renderer.domElement) return;
-  mouse_down_time = performance.now();
-  mouse_moved = false;
-};
-
-window.onmouseup = function (event) {
-  if (event.target != renderer.domElement) return;
-
-  const elapsed_time_ms = performance.now() - mouse_down_time;
-  if (event.button != 0 || (elapsed_time_ms > 100 && mouse_moved)) return;
-
-  clearSelection();
-
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-
-  const intersections = raycaster.intersectObject(scene, true);
-
-  // console.log("Raycast intersections:");
-  if (intersections.length > 0) {
-    for (var i = 0; i < intersections.length; i++) {
-      // console.log(intersections[i].object);
-
-      if (intersections[i].object.isInstancedMesh && intersections[i].object.visible) {
-        let mesh = intersections[i].object;
-        let instanceId = intersections[i].instanceId;
-
-        let clicked_node = GDS.meshes[mesh.name].instances[instanceId].node;
-
-        selectNode(clicked_node);
-
-        // Just first intersection
-        break;
+          // Just first intersection
+          break;
+        }
       }
     }
-  }
-};
+  };
+}
 
 function getTHREEJSLayerFromGDSLayer(gds_layer) {
   return getTHREEJSLayerFromGDSLayerId(
