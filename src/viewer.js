@@ -1111,24 +1111,34 @@ window.onresize = function () {
 };
 
 window.onkeyup = function (event) {
-  if (event.key == '1') {
-    setFillerCellsVisibility(!viewSettings.filler_cells);
-  } else if (event.key == '2') {
-    setTopCellGeometryVisibility(!viewSettings.top_cell_geometry);
-  } else if (event.key == '3') {
-    isolateSelectionOrGoBack();
-  } else if (event.key == '4') {
-    zoomSelection();
-  } else if (event.key == 'Escape') {
-    clearSelection();
-  } else if (event.key === 'ArrowUp') {
-    selectParent();
-  } else if (event.key === 'ArrowDown') {
-    selectFirstChild();
-  } else if (event.key === 'ArrowRight') {
-    selectNextSibling();
-  } else if (event.key === 'ArrowLeft') {
-    selectPrevSibling();
+  switch (event.key) {
+    case '1':
+      setFillerCellsVisibility(!viewSettings.filler_cells);
+      break;
+    case '2':
+      setTopCellGeometryVisibility(!viewSettings.top_cell_geometry);
+      break;
+    case '3':
+      isolateSelectionOrGoBack();
+      break;
+    case '4':
+      zoomSelection();
+      break;
+    case 'Escape':
+      clearSelection();
+      break;
+    case 'ArrowUp':
+      selectParent();
+      break;
+    case 'ArrowDown':
+      selectFirstChild();
+      break;
+    case 'ArrowRight':
+      selectNextSibling();
+      break;
+    case 'ArrowLeft':
+      selectPrevSibling();
+      break;
   }
 };
 
