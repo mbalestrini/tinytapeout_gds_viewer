@@ -8,7 +8,7 @@ import { WORKER_MSG_TYPE } from './defines.js';
 
 // We can't load HTTP resources anyway, so let's just assume HTTPS
 function toHttps(url) {
-  if (typeof url != 'string') {
+  if (typeof url != 'string' || url == 'tinytapeout.gds') {
     return url;
   }
   if (['localhost', '127.0.0.1', '::1'].includes(new URL(url).hostname)) {
