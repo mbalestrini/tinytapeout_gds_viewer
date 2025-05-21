@@ -18,10 +18,10 @@ function toHttps(url) {
 }
 
 const urlParams = new URLSearchParams(location.search);
-const GDS_URL = toHttps(urlParams.get('model')) || 'tinytapeout.gds';
+const GDS_URL = toHttps(urlParams.get('url') || urlParams.get('model'));
 const GDS_PROCESS = urlParams.get('process') || 'SKY130';
 
-if (GDS_URL.endsWith('.gltf')) {
+if (GDS_URL && GDS_URL.endsWith('.gltf')) {
   location.href = `https://legacy-gltf.gds-viewer.tinytapeout.com/?model=${GDS_URL}`;
 }
 
@@ -78,6 +78,44 @@ let instanceClassTitleDiv = document.querySelector('div#instanceClassTitle');
 let informationDiv = document.querySelector('div#information');
 let loadingStatus = document.querySelector('div#loadingStatus');
 let crossSectionDiv = document.querySelector('div#crossSection');
+const dropZone = document.getElementById('dropZone');
+
+// Handle drag and drop
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.gds')) {
+    loadLocalGDS(file);
+  }
+});
+
+dropZone.addEventListener('click', () => {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.gds';
+  fileInput.style.display = 'none';
+  fileInput.onchange = function (event) {
+    const file = event.target.files[0];
+    if (file) {
+      loadLocalGDS(file);
+    }
+  };
+  document.body.appendChild(fileInput);
+  fileInput.click();
+  fileInput.remove();
+});
 
 // lil-gui controls
 let guiLayersFolder,
@@ -108,8 +146,6 @@ if (import.meta.hot) {
     loadGDS(GDS_URL, reset_camera); // Re-load the model without reseting the camera
   });
 }
-
-// init();
 
 gdsProcessorWorker.addEventListener('error', function (event) {
   console.log('Error on worker thread', event);
@@ -213,7 +249,21 @@ function init() {
 
   initProcessLayers();
 
-  loadGDS(GDS_URL);
+  if (GDS_URL) {
+    loadGDS(GDS_URL);
+  } else {
+    loadingStatus.innerText = '';
+    dropZone.classList.remove('hidden');
+  }
+}
+
+function initLayerVisibility() {
+  for (const [layer_id, layer] of Object.entries(GDS.layers)) {
+    const threejs_layer_id = getTHREEJSLayerFromGDSLayerId(layer_id);
+    camera.layers.enable(threejs_layer_id);
+    section_camera.layers.enable(threejs_layer_id);
+    raycaster.layers.enable(threejs_layer_id);
+  }
 }
 
 function loadGDS(fileURL, reset_camera) {
@@ -221,8 +271,6 @@ function loadGDS(fileURL, reset_camera) {
 
   fetchWithProgressArrayBuffer(fileURL)
     .then((buffer) => {
-      // hideStartupContent();
-      // hideLoadingGDS();
       loadingStatus.innerText = 'Processing file';
 
       const filename = fileURL.split('/').pop();
@@ -230,20 +278,37 @@ function loadGDS(fileURL, reset_camera) {
 
       // Warning: 'data' is detached after calling this function
       processGDS(filename, data);
-
-      // Init THREE.js layers visibility
-      for (const [layer_id, layer] of Object.entries(GDS.layers)) {
-        const threejs_layer_id = getTHREEJSLayerFromGDSLayerId(layer_id);
-        camera.layers.enable(threejs_layer_id);
-        section_camera.layers.enable(threejs_layer_id);
-        raycaster.layers.enable(threejs_layer_id);
-      }
+      initLayerVisibility();
     })
     .catch((err) => {
       loadingStatus.innerText = `Error loading file`;
 
       console.log('Found error:', err);
     });
+}
+
+/**
+ * @param {File} file
+ */
+function loadLocalGDS(file) {
+  const reader = new FileReader();
+  loadingStatus.innerText = 'Processing file';
+  reader.onload = function (event) {
+    const arrayBuffer = event.target.result;
+    try {
+      processGDS('local.gds', new Uint8Array(arrayBuffer));
+
+      initLayerVisibility();
+    } catch (error) {
+      loadingStatus.innerText = 'Error processing file';
+      console.error('Error processing file', error);
+    }
+  };
+  reader.onerror = function (event) {
+    loadingStatus.innerText = 'Error processing file';
+  };
+  reader.readAsArrayBuffer(file);
+  dropZone.classList.add('hidden');
 }
 
 function processGDS(filename, data) {
