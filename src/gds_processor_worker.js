@@ -40,6 +40,10 @@ async function initialize() {
   };
 
   self.gds_add_cell = (cell_name, bounds, is_top_cell) => {
+    if (cell_name === '$$$CONTEXT_INFO$$$') {
+      // KLayout context info cell, ignore it
+      return;
+    }
     self.postMessage({
       type: WORKER_MSG_TYPE.ADD_CELL,
       cell_name: cell_name,
