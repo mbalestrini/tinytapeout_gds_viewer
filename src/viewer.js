@@ -1141,42 +1141,44 @@ function initWindowEvents() {
 
     if (event.target != renderer.domElement) return;
 
-    let mouse = new THREE.Vector3();
-    let pos = new THREE.Vector3();
+    if (experimental_show_section_on) {
+      let mouse = new THREE.Vector3();
+      let pos = new THREE.Vector3();
 
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    mouse.z = 0.5;
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      mouse.z = 0.5;
 
-    mouse.unproject(camera);
-    mouse.sub(camera.position).normalize();
+      mouse.unproject(camera);
+      mouse.sub(camera.position).normalize();
 
-    let ray = new THREE.Ray(camera.position, mouse);
-    let plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2);
-    let point = new THREE.Vector3();
-    ray.intersectPlane(plane, point);
+      let ray = new THREE.Ray(camera.position, mouse);
+      let plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2);
+      let point = new THREE.Vector3();
+      ray.intersectPlane(plane, point);
 
-    // section_camera.position.x = point.x;
-    section_camera.position.x = point.x;
-    section_camera.position.y = point.y;
-    section_camera.near = -1;
-    section_camera.far = 1;
-    section_camera.updateProjectionMatrix();
+      // section_camera.position.x = point.x;
+      section_camera.position.x = point.x;
+      section_camera.position.y = point.y;
+      section_camera.near = -1;
+      section_camera.far = 1;
+      section_camera.updateProjectionMatrix();
 
-    let camera_width = section_camera.right - section_camera.left;
-    let camera_height = section_camera.top - section_camera.bottom;
-    section_renderer_box.set(
-      new THREE.Vector3(
-        section_camera.position.x + section_camera.near,
-        section_camera.position.y - camera_width / 2,
-        section_camera.position.z - camera_height / 2,
-      ),
-      new THREE.Vector3(
-        section_camera.position.x + section_camera.far,
-        section_camera.position.y + camera_width / 2,
-        section_camera.position.z + camera_height / 2,
-      ),
-    );
+      let camera_width = section_camera.right - section_camera.left;
+      let camera_height = section_camera.top - section_camera.bottom;
+      section_renderer_box.set(
+        new THREE.Vector3(
+          section_camera.position.x + section_camera.near,
+          section_camera.position.y - camera_width / 2,
+          section_camera.position.z - camera_height / 2,
+        ),
+        new THREE.Vector3(
+          section_camera.position.x + section_camera.far,
+          section_camera.position.y + camera_width / 2,
+          section_camera.position.z + camera_height / 2,
+        ),
+      );
+    }
   };
 
   window.onmousedown = function (event) {
