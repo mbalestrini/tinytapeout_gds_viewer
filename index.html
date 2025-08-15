@@ -33,6 +33,32 @@
             font-weight: bold;
         }
 
+        #dropZone {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 200px;
+            border: 2px dashed #666;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #dropZone.hidden {
+            display: none;
+        }
+        #dropZone.dragover {
+            border-color: #fff;
+            background: rgba(0, 0, 0, 0.7);
+        }
+
         #crossSection {
             position: absolute;
             bottom: 0;
@@ -80,6 +106,11 @@
             <br>4: Zoom to selection
         </div>
         
+    </div>
+
+    <div id="dropZone" class="hidden">
+        <div style="font-size: 18px; margin-bottom: 10px;">Drop GDS file here</div>
+        <div style="font-size: 14px; opacity: 0.8;">or click to select</div>
     </div>
 
     <script type="module" src="src/viewer.js"></script>
