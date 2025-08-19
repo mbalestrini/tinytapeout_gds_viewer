@@ -251,10 +251,10 @@ var Module = (() => {
       }
     }
     var ASM_CONSTS = {
-      111848: ($0, $1) => {
+      111896: ($0, $1) => {
         self.gds_info_log(UTF8ToString($0), $1);
       },
-      111893: ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
+      111941: ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
         var design_name = UTF8ToString($0);
         var stats = {
           designs: $1,
@@ -269,26 +269,26 @@ var Module = (() => {
         };
         gds_stats(design_name, stats);
       },
-      112131: ($0, $1, $2, $3, $4, $5) => {
+      112179: ($0, $1, $2, $3, $4, $5) => {
         let bounds = { min_x: $1, min_y: $2, max_x: $3, max_y: $4 };
         gds_add_cell(UTF8ToString($0), bounds, $5);
       },
-      112245: ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
+      112293: ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
         gds_add_mesh(UTF8ToString($0), UTF8ToString($1), $2, $3, $4, $5, $6, $7, $8);
       },
-      112327: ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
+      112375: ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
         gds_add_lines(UTF8ToString($0), UTF8ToString($1), $2, $3, $4, $5, $6, $7, $8);
       },
-      112410: ($0, $1, $2, $3, $4, $5, $6) => {
+      112458: ($0, $1, $2, $3, $4, $5, $6) => {
         gds_add_label(UTF8ToString($0), $1, $2, UTF8ToString($3), $4, $5, $6);
       },
-      112485: ($0, $1, $2, $3, $4, $5, $6) => {
+      112533: ($0, $1, $2, $3, $4, $5, $6) => {
         gds_add_reference(UTF8ToString($0), UTF8ToString($1), UTF8ToString($2), $3, $4, $5, $6);
       },
-      112575: () => {
+      112623: () => {
         gds_finished_references();
       },
-      112606: ($0) => {
+      112654: ($0) => {
         gds_process_progress($0);
       },
     };
@@ -3120,7 +3120,7 @@ var Module = (() => {
     MEMFS.doesNotExistError = new FS.ErrnoError(44);
     MEMFS.doesNotExistError.stack = '<generic error, no stack>';
     var wasmImports = {
-      b: ___cxa_throw,
+      c: ___cxa_throw,
       t: ___syscall_dup3,
       g: ___syscall_fcntl64,
       v: ___syscall_ioctl,
@@ -3139,7 +3139,7 @@ var Module = (() => {
       s: _fd_seek,
       i: _fd_write,
       k: invoke_iiiiii,
-      c: invoke_vi,
+      b: invoke_vi,
       e: invoke_vii,
       l: invoke_viii,
       f: invoke_viiii,

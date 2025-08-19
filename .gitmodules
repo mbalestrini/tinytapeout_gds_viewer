@@ -1,0 +1,9 @@
+[submodule "gds_processor/external/qhull"]
+	path = gds_processor/external/qhull
+	url = https://github.com/qhull/qhull
+[submodule "gds_processor/external/gdstk"]
+	path = gds_processor/external/gdstk
+	url = https://github.com/heitzmann/gdstk
+[submodule "gds_processor/external/CDT"]
+	path = gds_processor/external/CDT
+	url = https://github.com/artem-ogre/CDT
