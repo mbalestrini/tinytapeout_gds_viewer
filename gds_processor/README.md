@@ -7,11 +7,14 @@ This directory contains the code for building `gds_processor.wasm` and `gds_proc
 - emsdk (tested with version 4.0.2)
 - emscripten zlib port (instructions bellow) 
 
+
+
 ## External libraries
-gds_processor dependes on this libraries, already included as submodules:
+gds_processor depends on these libraries, already included as submodules:
 - qhull: https://github.com/qhull/qhull
 - gdstk: https://github.com/heitzmann/gdstk
 - CDT: https://github.com/artem-ogre/CDT
+
 
 
 ## zlib port
@@ -21,6 +24,8 @@ You can check if it's already available by running:
 
 If not, you can build it by running:  
 `embuilder build zlib`
+
+
 
 
 ## Build instructions
