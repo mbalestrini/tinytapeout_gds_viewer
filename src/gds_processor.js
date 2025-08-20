@@ -251,10 +251,10 @@ var Module = (() => {
       }
     }
     var ASM_CONSTS = {
-      111896: ($0, $1) => {
+      120696: ($0, $1) => {
         self.gds_info_log(UTF8ToString($0), $1);
       },
-      111941: ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
+      120741: ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
         var design_name = UTF8ToString($0);
         var stats = {
           designs: $1,
@@ -269,26 +269,26 @@ var Module = (() => {
         };
         gds_stats(design_name, stats);
       },
-      112179: ($0, $1, $2, $3, $4, $5) => {
+      120979: ($0, $1, $2, $3, $4, $5) => {
         let bounds = { min_x: $1, min_y: $2, max_x: $3, max_y: $4 };
         gds_add_cell(UTF8ToString($0), bounds, $5);
       },
-      112293: ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
+      121093: ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
         gds_add_mesh(UTF8ToString($0), UTF8ToString($1), $2, $3, $4, $5, $6, $7, $8);
       },
-      112375: ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
+      121175: ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
         gds_add_lines(UTF8ToString($0), UTF8ToString($1), $2, $3, $4, $5, $6, $7, $8);
       },
-      112458: ($0, $1, $2, $3, $4, $5, $6) => {
+      121258: ($0, $1, $2, $3, $4, $5, $6) => {
         gds_add_label(UTF8ToString($0), $1, $2, UTF8ToString($3), $4, $5, $6);
       },
-      112533: ($0, $1, $2, $3, $4, $5, $6) => {
+      121333: ($0, $1, $2, $3, $4, $5, $6) => {
         gds_add_reference(UTF8ToString($0), UTF8ToString($1), UTF8ToString($2), $3, $4, $5, $6);
       },
-      112623: () => {
+      121423: () => {
         gds_finished_references();
       },
-      112654: ($0) => {
+      121454: ($0) => {
         gds_process_progress($0);
       },
     };

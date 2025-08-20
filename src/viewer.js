@@ -97,7 +97,10 @@ dropZone.addEventListener('drop', (e) => {
   dropZone.classList.remove('dragover');
 
   const file = e.dataTransfer.files[0];
-  if (file && file.name.endsWith('.gds')) {
+  if (
+    file &&
+    (file.name.toLowerCase().endsWith('.gds') || file.name.toLowerCase().endsWith('.oas'))
+  ) {
     loadLocalGDS(file);
   }
 });
@@ -105,7 +108,7 @@ dropZone.addEventListener('drop', (e) => {
 dropZone.addEventListener('click', () => {
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
-  fileInput.accept = '.gds';
+  fileInput.accept = '.gds, .oas';
   fileInput.style.display = 'none';
   fileInput.onchange = function (event) {
     const file = event.target.files[0];
@@ -299,8 +302,8 @@ function loadLocalGDS(file) {
   reader.onload = function (event) {
     const arrayBuffer = event.target.result;
     try {
-      processGDS('local.gds', new Uint8Array(arrayBuffer));
-
+      const file_extension = file.name.split('.').pop();
+      processGDS('local.' + file_extension.toLowerCase(), new Uint8Array(arrayBuffer));
       initLayerVisibility();
     } catch (error) {
       loadingStatus.innerText = 'Error processing file';

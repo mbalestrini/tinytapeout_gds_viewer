@@ -238,6 +238,29 @@ void print_gds_info(gdstk::LibraryInfo &lib_info)
     JS_gds_info_log("\n");
 }
 
+bool check_extension_matches(const char *filename, const char *target_extension)
+{
+    const int extension_length = strlen(target_extension);    
+    const int filename_len = strlen(filename);
+
+    // Filename too short
+    if(filename_len<extension_length+2 || filename[filename_len-extension_length-1]!='.')
+        return false;
+
+    int offset = (filename_len-extension_length);
+    for (int i = 0; i < extension_length; i++)
+    {
+        if( tolower(filename[offset]) != tolower(*target_extension))
+        {
+            return false;
+        }
+        offset++;
+        target_extension++;
+    }
+
+    return true;
+}
+
 bool GDSTKUTIL_is_gds_property(const Property* property) {
     if (strcmp(property->name, s_gds_property_name) != 0 || property->value == NULL) return false;
     PropertyValue* attribute = property->value;
@@ -283,14 +306,20 @@ extern "C"
         g_lib.clear();
 
         gdstk::LibraryInfo lib_info = {};
-        gdstk::gds_info(gds_filepath, lib_info);
 
-        print_gds_info(lib_info);
+        if(check_extension_matches(gds_filepath, "gds"))
+        {        
+            gdstk::gds_info(gds_filepath, lib_info);
+            print_gds_info(lib_info);
+            JS_gds_process_progress(1);
+            g_lib = read_gds(gds_filepath, 0, 0, NULL, NULL);
+        } 
+        else 
+        {
+            g_lib = read_oas(gds_filepath, 0, 0, NULL);
+        }
 
-        JS_gds_process_progress(1);
-
-        g_lib = read_gds(gds_filepath, 0, 0, NULL, NULL);
-
+        
         JS_gds_process_progress(5);
 
         Array<Cell *> top_cells = {};
@@ -300,7 +329,7 @@ extern "C"
         Cell *top_cell = top_cells[0];
 
         JS_gds_stats(top_cell->name, lib_info);
-
+        
         JS_gds_info_log("TOP_CELL: %s\n", top_cell->name);
         JS_gds_info_log("references: %" PRIu64 "\n", top_cell->reference_array.count);
 
